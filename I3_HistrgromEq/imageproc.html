@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <!-- Load d3.js -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap/bootstrap4-toggle.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+    <title>COMP4431 Multimedia Computing - Image Processor</title>
+
+    <style>
+    body { min-width: 1020px; }
+    .main { min-width: 1020px; width: 1020px; margin-top: 10px; }
+    .container-fluid { margin-top: 10px; }
+    .nav-item { width: 25%; }
+    .nav-tabs, .nav-tabs .dropdown-item { font-size: 14px; }
+    .toggle { height: 38px !important; }
+    canvas { border: 1px solid black; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark navbar-fixed-top">
+        <div class="navbar-header">
+            <span class="navbar-brand">Image Processor</span>
+        </div>
+    </nav>
+
+    <div class="main container">
+        <div class="row">
+            <div class="col-6">
+                <h5>Input Image</h5>
+                <canvas id="input" width="480" height="360"></canvas>
+                <div class="form-inline">
+                    <div class="input-group">
+                        <div class="input-group-prepend"><span class="input-group-text">Image</span></div>
+                        <select class="custom-select" id="input-image">
+                            <option value="hkust.png">HKUST</option>
+                            <option value="japan.png">Japan</option>
+                            <option value="justice_league.png">Justice League</option>
+                            <option value="wonder_woman.png">Wonder Woman</option>
+                            <option value="cap.png">Captain America</option>
+                            <option value="agatha.png">Agatha Harkness</option>
+                            <option value="mandalorian.png">Mandalorian</option>
+                            <option value="trooper.png">Stormtroopers</option>
+                            <option value="oldhongkong1.png">Old Hong Kong 1</option> <!-- from gwulo.com -->
+                            <option value="oldhongkong2.png">Old Hong Kong 2</option> <!-- from oldhkphoto.com -->
+                            <option value="grayscale.png">Grayscale Test</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <h5>Output Image</h5>
+                <canvas id="output" width="480" height="360"></canvas>
+            </div>
+            <div class="col-6">
+            </div>
+            <div class="col-6">
+                <h5>Output Histogram</h5>
+                <div id="histogram" width="480" height="360"></div>
+                <div class="form-inline">
+                    <button id="output-update" class="btn btn-info"><i class="fas fa-sync"></i> Update Output</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row"><div class="col-12">&nbsp;</div></div>
+
+        <div class="row">
+            <div class="col-12">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs nav-fill">
+
+                    <!-- Basic processing -->
+                    <li class="nav-item dropdown" id="basic-dropdown">
+                        <a class="nav-link dropdown-toggle active" data-toggle="dropdown" href="#">Basic processing<br><span class="title"><i>Do Nothing</i></span>
+                        <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#no-op"><i>Do Nothing</i></a></li>
+                            <li><a class="dropdown-item" href="#grayscale">GrayScale</a></li>
+                            <li><a class="dropdown-item" href="#auto-contrast">Automatic Contrast</a></li>
+                            <li><a class="dropdown-item" href="#histogram-equalization">Histogram Equalization</a></li>
+                            <li><a class="dropdown-item" href="#adaptive-histogram-equalization">AHE</a></li>
+                            <li><a class="dropdown-item" href="#contrast-limited-adaptive-histogram-equalization">CLAHE</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Base layer -->
+                    <li class="nav-item dropdown" id="base-dropdown">
+                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Base Layer<br><span class="title"><i>Do Nothing</i></span>
+                        <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#no-op"><i>Do Nothing</i></a></li>
+                            <li><a class="dropdown-item" href="#blur">Blur</a></li>
+                            <li><a class="dropdown-item" href="#kuwahara">Kuwahara Filter</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Shade layer -->
+                    <li class="nav-item dropdown" id="shade-dropdown">
+                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Shade Layer<br><span class="title"><i>Do Nothing</i></span>
+                        <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#no-op"><i>Do Nothing</i></a></li>
+                            <li><a class="dropdown-item" href="#dither">Ordered Dithering</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Outline layer -->
+                    <li class="nav-item dropdown" id="outline-dropdown">
+                        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Outline Layer<br><span class="title"><i>Do Nothing</i></span>
+                        <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#no-op"><i>Do Nothing</i></a></li>
+                            <li><a class="dropdown-item" href="#sobel">Sobel Edge</a></li>
+                        </ul>
+                    </li>
+
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content">
+
+                    <!-- No op -->
+                    <div class="tab-pane active" id="no-op">
+                        <div class="container-fluid">
+                            <p>No parameters available</p>
+                        </div>
+                    </div>
+
+                    <!-- Grayscale -->
+                    <div class="tab-pane" id="grayscale">
+                        <div class="container-fluid">
+                            <p>No parameters available</p>
+                        </div>
+                    </div>
+
+                    <!-- Automatic contrast -->
+                    <div class="tab-pane" id="auto-contrast">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="auto-contrast-type">Type:</label>
+                                    <select class="custom-select" id="auto-contrast-type">
+                                        <option value="gray">Gray Level</option>
+                                        <option value="color">Individual Colour</option>
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <label for="auto-contrast-percentage">Percentage of pixels to ignore:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                            <input class="custom-range" id="auto-contrast-percentage" type="range" value="5" min="0" max="50" step="1"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text > span').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append"><span class="input-group-text d-block" style="width: 4em"><span>0</span>%</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Histogram Equalization -->
+                    <div class="tab-pane" id="histogram-equalization">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="histogram-equalization-type">Type:</label>
+                                    <select class="custom-select" id="histogram-equalization-type">
+                                        <option value="gray">Gray Level</option>
+                                        <option value="color">Individual Colour</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Adaptive Histogram Equalization -->
+                    <div class="tab-pane" id="adaptive-histogram-equalization">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="adaptive-histogram-equalization-type">Type:</label>
+                                    <select class="custom-select" id="adaptive-histogram-equalization-type">
+                                        <option value="gray">Gray Level</option>
+                                        <option value="color">Individual Colour</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="block-size">Block size:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center col-8 px-2 border rounded-left">
+                                            <input class="custom-range" id="block-size" type="range" value="128" min="128" max="256" step="32"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text > span').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append col-4"><span class="input-group-text"><span>128</span> &times; <span>128</span></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contrast Limited Adaptive Histogram Equalization -->
+                    <div class="tab-pane" id="contrast-limited-adaptive-histogram-equalization">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="contrast-limited-adaptive-histogram-equalization-type">Type:</label>
+                                    <select class="custom-select" id="contrast-limited-adaptive-histogram-equalization-type">
+                                        <option value="gray">Gray Level</option>
+                                        <option value="color">Individual Colour</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="block-siz">Block size:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center col-8 px-2 border rounded-left">
+                                            <input class="custom-range" id="block-siz" type="range" value="128" min="128" max="256" step="32"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text > span').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append col-4"><span class="input-group-text"><span>128</span> &times; <span>128</span></span></div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <label for="clip-limit">Clip limit:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                            <input class="custom-range" id="clip-limit" type="range" value="1" min="1" max="10" step="1"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append"><span class="input-group-text">1</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Blur -->
+                    <div class="tab-pane" id="blur">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="blur-input">Input:</label>
+                                    <select class="custom-select" id="blur-input">
+                                        <option value="original">Original Image</option>
+                                        <option value="processed">Processed Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="blur-kernel-size">Kernel size:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                            <input class="custom-range" id="blur-kernel-size" type="range" value="3" min="3" max="9" step="2"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text > span').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append"><span class="input-group-text"><span>3</span> &times; <span>3</span></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kuwahara filter -->
+                    <div class="tab-pane" id="kuwahara">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="kuwahara-input">Input:</label>
+                                    <select class="custom-select" id="kuwahara-input">
+                                        <option value="original">Original Image</option>
+                                        <option value="processed">Processed Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <label for="kuwahara-filter-size">Filter size:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                            <input class="custom-range" id="kuwahara-filter-size" type="range" value="5" min="5" max="13" step="4"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text > span').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append">
+                                            <span class="input-group-text d-block" style="width: 5.5em"><span>5</span> &times; <span>5</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ordered dithering -->
+                    <div class="tab-pane" id="dither">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="dither-input">Input:</label>
+                                    <select class="custom-select" id="dither-input">
+                                        <option value="original">Original Image</option>
+                                        <option value="processed">Processed Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="dither-matrix-type">Matrix type:</label>
+                                    <select class="custom-select" id="dither-matrix-type">
+                                        <option value="bayer2">Bayer's 2&times;2 Matrix</option>
+                                        <option value="bayer4">Bayer's 4&times;4 Matrix</option>
+                                        <option value="line">Diagonal Lines</option>
+                                        <option value="diamond">Diamonds</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="dither-transparent">White shown as transparent:</label>
+                                    <div class="input-group">
+                                        <input class="form-control toggle-control" id="dither-transparent" type="checkbox" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sobel edge -->
+                    <div class="tab-pane" id="sobel">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="sobel-input">Input:</label>
+                                    <select class="custom-select" id="sobel-input">
+                                        <option value="original">Original Image</option>
+                                        <option value="processed">Processed Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="sobel-threshold">Threshold value:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                            <input class="custom-range" id="sobel-threshold" type="range" value="128" min="0" max="255" step="1"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append"><span class="input-group-text d-block" style="width: 3.5em">128</span></div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <label for="sobel-blur">Blur before edge detection:</label>
+                                    <div class="input-group">
+                                        <input class="form-control toggle-control" id="sobel-blur" type="checkbox" />
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <label for="sobel-blur-kernel-size">Blur kernel size:</label>
+                                    <div class="input-group">
+                                        <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                            <input class="custom-range" id="sobel-blur-kernel-size" type="range" value="3" min="3" max="9" step="2"
+                                             oninput="$(this).parents('.input-group').find('.input-group-text > span').html($(this).val())">
+                                        </div>
+                                        <div class="input-group-append"><span class="input-group-text"><span>3</span> &times; <span>3</span></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-3">&nbsp;</div>
+                                <div class="col-3">
+                                    <label for="sobel-flip">Flip edge colour:</label>
+                                    <div class="input-group">
+                                        <input class="form-control toggle-control" id="sobel-flip" type="checkbox" />
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label for="sobel-transparent">Non-edge shown as transparent:</label>
+                                    <div class="input-group">
+                                        <input class="form-control toggle-control" id="sobel-transparent" type="checkbox" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+
+    <script src="jquery/jquery-3.5.1.min.js"></script>
+    <script src="bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="bootstrap/bootstrap4-toggle.min.js"></script>
+
+    <script src="js/imageproc.js"></script>
+    <script src="js/base.js"></script>
+    <script src="js/comic.js"></script>
+    <script src="js/blur.js"></script>
+    <script src="js/kuwahara.js"></script>
+    <script src="js/dither.js"></script>
+    <script src="js/outline.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/layers.js"></script>
+</body>
+</html>
